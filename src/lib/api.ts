@@ -13,7 +13,8 @@ export async function sendChatMessageStream(
   query: string,
   history: Message[],
   conversationId: string | null,
-  callbacks: ChatStreamCallbacks
+  callbacks: ChatStreamCallbacks,
+  language: string = 'en'
 ): Promise<void> {
   try {
     const formattedHistory = history.map((msg) => ({
@@ -30,6 +31,7 @@ export async function sendChatMessageStream(
         query,
         history: formattedHistory,
         conversation_id: conversationId,
+        language: language,
       }),
     });
 
@@ -90,11 +92,11 @@ export async function fetchCollectionStats(): Promise<CollectionStats | null> {
   }
 }
 
-export async function crawlTopics(topics: string[], maxArticles = 5): Promise<CrawlResponse> {
+export async function crawlTopics(topics: string[], maxArticles = 5, language = 'en'): Promise<CrawlResponse> {
   const res = await fetch(`${API_BASE_URL}/api/crawl`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topics, max_articles: maxArticles, language: 'en' }),
+    body: JSON.stringify({ topics, max_articles: maxArticles, language }),
   });
   if (!res.ok) {
     throw new Error('Failed to start topic crawl');
@@ -102,9 +104,9 @@ export async function crawlTopics(topics: string[], maxArticles = 5): Promise<Cr
   return await res.json();
 }
 
-export async function searchWikipedia(query: string): Promise<WikiArticleSummary[]> {
+export async function searchWikipedia(query: string, language = 'en'): Promise<WikiArticleSummary[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&language=${language}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.results || [];

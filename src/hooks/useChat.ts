@@ -7,6 +7,13 @@ import { sendChatMessageStream } from '@/lib/api';
 const STORAGE_KEY = 'wiki_chat_conversations_v1';
 const ACTIVE_CONV_KEY = 'wiki_chat_active_id';
 
+const generateUniqueId = (prefix: string) => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+};
+
 export function useChat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -32,19 +39,18 @@ export function useChat() {
     }
   }, []);
 
-  // Save conversations to localStorage
-  const saveConversations = useCallback((updated: Conversation[]) => {
-    setConversations(updated);
+  // Helper to persist conversations to localStorage without triggering state loop
+  const persistToStorage = useCallback((updated: Conversation[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {
-      console.error('Failed to save conversations:', e);
+      console.error('Failed to save conversations to localStorage:', e);
     }
   }, []);
 
   // Create new conversation
   const createNewConversation = useCallback(() => {
-    const newId = `conv_${Date.now()}`;
+    const newId = generateUniqueId('conv');
     const newConv: Conversation = {
       id: newId,
       title: 'New Conversation',
@@ -55,8 +61,8 @@ export function useChat() {
 
     setConversations((prev) => {
       const updated = [newConv, ...prev];
+      persistToStorage(updated);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         localStorage.setItem(ACTIVE_CONV_KEY, newId);
       } catch (e) {
         console.error(e);
@@ -67,7 +73,7 @@ export function useChat() {
     setActiveConversationId(newId);
     setError(null);
     return newId;
-  }, []);
+  }, [persistToStorage]);
 
   // Select conversation
   const selectConversation = useCallback((id: string) => {
@@ -83,27 +89,26 @@ export function useChat() {
   const deleteConversation = useCallback((id: string) => {
     setConversations((prev) => {
       const filtered = prev.filter((c) => c.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-        if (activeConversationId === id) {
-          const nextActive = filtered.length > 0 ? filtered[0].id : null;
-          setActiveConversationId(nextActive);
-          if (nextActive) localStorage.setItem(ACTIVE_CONV_KEY, nextActive);
-          else localStorage.removeItem(ACTIVE_CONV_KEY);
+      persistToStorage(filtered);
+      if (activeConversationId === id) {
+        const nextActive = filtered.length > 0 ? filtered[0].id : null;
+        setActiveConversationId(nextActive);
+        if (nextActive) {
+          try { localStorage.setItem(ACTIVE_CONV_KEY, nextActive); } catch (e) {}
+        } else {
+          try { localStorage.removeItem(ACTIVE_CONV_KEY); } catch (e) {}
         }
-      } catch (e) {
-        console.error(e);
       }
       return filtered;
     });
-  }, [activeConversationId]);
+  }, [activeConversationId, persistToStorage]);
 
   // Current active conversation
   const currentConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
   // Send message
   const sendMessage = useCallback(
-    async (queryText: string) => {
+    async (queryText: string, language: string = 'en') => {
       if (!queryText.trim() || isLoading) return;
 
       let convId = activeConversationId;
@@ -114,7 +119,7 @@ export function useChat() {
         isFirstMessageInConv = true;
       }
 
-      const userMsgId = `user_${Date.now()}`;
+      const userMsgId = generateUniqueId('user');
       const userMessage: Message = {
         id: userMsgId,
         role: 'user',
@@ -122,7 +127,7 @@ export function useChat() {
         timestamp: new Date().toISOString(),
       };
 
-      const botMsgId = `bot_${Date.now()}`;
+      const botMsgId = generateUniqueId('bot');
       const botPlaceholderMessage: Message = {
         id: botMsgId,
         role: 'assistant',
@@ -149,7 +154,7 @@ export function useChat() {
           }
           return c;
         });
-        saveConversations(updated);
+        persistToStorage(updated);
         return updated;
       });
 
@@ -216,7 +221,7 @@ export function useChat() {
               }
               return c;
             });
-            saveConversations(updated);
+            persistToStorage(updated);
             return updated;
           });
         },
@@ -241,13 +246,13 @@ export function useChat() {
               }
               return c;
             });
-            saveConversations(updated);
+            persistToStorage(updated);
             return updated;
           });
         },
-      });
+      }, language);
     },
-    [activeConversationId, conversations, isLoading, createNewConversation, saveConversations]
+    [activeConversationId, conversations, isLoading, createNewConversation, persistToStorage]
   );
 
   return {
