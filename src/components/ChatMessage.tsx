@@ -84,7 +84,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             {isUser ? 'You' : 'WikiBot RAG'}
           </span>
           <div className="flex items-center gap-2">
-            <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span suppressHydrationWarning>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             {!isUser && message.content && (
               <button
                 onClick={handleCopy}

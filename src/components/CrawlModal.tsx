@@ -122,14 +122,14 @@ export const CrawlModal: React.FC<CrawlModalProps> = ({ isOpen, onClose }) => {
         </form>
 
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+          <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono">
             ⚠️ {error}
           </div>
         )}
 
         {result && (
           <div className="mt-4 p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-slate-200 space-y-1 font-mono">
-            <div className="text-cyan-400 font-bold">✓ Indexing Complete!</div>
+            <div className="text-cyan-400 font-bold">✅ Indexing Complete!</div>
             <div>Articles Crawled: <strong className="text-white">{result.articles_crawled}</strong></div>
             <div>Chunks Stored: <strong className="text-white">{result.chunks_stored}</strong></div>
             <div>Topics Processed: <span className="text-purple-300">{result.topics_processed.join(', ')}</span></div>

@@ -10,7 +10,7 @@ import { StatsModal } from '@/components/StatsModal';
 import { CrawlModal } from '@/components/CrawlModal';
 
 const LANGUAGES = [
-  { code: 'en', label: '🇬🇧 English' },
+  { code: 'en', label: '🇺🇸 English' },
   { code: 'es', label: '🇪🇸 Español' },
   { code: 'fr', label: '🇫🇷 Français' },
   { code: 'de', label: '🇩🇪 Deutsch' },
@@ -55,7 +55,7 @@ export default function Home() {
   const messages = currentConversation?.messages || [];
 
   if (!isMounted) {
-    return <div className="h-screen w-screen bg-[#060814]" />;
+    return <div className="h-screen w-screen bg-[#060814]" suppressHydrationWarning />;
   }
 
   return (
